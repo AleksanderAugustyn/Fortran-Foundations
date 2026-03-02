@@ -6,10 +6,19 @@ A foundational Fortran library providing precision management, physical constant
 
 ### `precision_utilities_mod`
 
-Kind parameters and floating-point comparison utilities.
+Kind parameters and floating-point comparison utilities. Pure Fortran internals using `iso_fortran_env`.
 
-- **Kind parameters:** `ik` (int), `ikl` (int64), `rk` (double), `rk_single` (float), `rk_high` (long double) — all C-interoperable via `iso_c_binding`
+- **Kind parameters:** `ik` (`int32`), `ikl` (`int64`), `rk` (`real64`), `rk_single` (`real32`), `rk_high` (`real128`)
 - **Comparison functions:** `are_close_f` (robust relative/absolute tolerance with NaN/Inf handling in Debug builds), `is_zero_f` (tolerance-based zero check)
+
+### `c_bindings_mod`
+
+Centralized C-interoperability boundary for mixed-language use (Python/Rust/C++).
+
+- **C-equivalent type aliases:** `ik_c` (`c_int`), `ikl_c` (`c_int64_t`), `rk_single_c` (`c_float`), `rk_c` (`c_double`), `bool_c` (`c_bool`)
+- **Re-exported C types:** `c_ptr`, `c_char`, `c_null_ptr`, `c_null_char`
+- **String interop:** `c_string_to_fortran` (null-terminated C pointer to Fortran string), `fortran_string_to_c` (Fortran string to null-terminated C array)
+- **ABI validation:** `verify_c_bindings()` — runtime assertion that Fortran and C kind sizes match
 
 ### `mathematical_and_physical_constants_mod`
 
@@ -73,4 +82,4 @@ No external numerical libraries (BLAS, LAPACK, etc.) are required.
 - All procedures are `pure`
 - Explicit `intent` on all arguments
 - Module exports use `only:` imports
-- C-interoperable kind parameters for potential mixed-language use
+- Pure Fortran precision kinds (`iso_fortran_env`) with a separate C-interop boundary module (`iso_c_binding`)

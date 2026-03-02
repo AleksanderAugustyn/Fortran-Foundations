@@ -1,14 +1,15 @@
 !> Module for precision and tolerance utilities, used to compare floating point numbers
 !!
 !! Defines kinds for integers and reals, as well as tolerance constants and helper functions for comparing floating point numbers.
-!! If you need to change precision (for example real64- > real128), change only rk parameter, the change will propagate to all reals
+!! If you need to change precision (for example real64 -> real128), change only rk parameter, the change will propagate to all reals
 !!
 !! @note
-!! module uses iso_c_binding to provide C/C++ compatibility if needed in the future
+!! Uses iso_fortran_env for guaranteed bit-width kinds independent of C ABI.
+!! For C-interoperable type aliases, see c_bindings_mod.
 !! @endnote
 module precision_utilities_mod
 
-    use, intrinsic :: iso_c_binding, only: c_int, c_int64_t, c_float, c_double, c_long_double
+    use, intrinsic :: iso_fortran_env, only: int32, int64, real32, real64, real128
 #ifdef DEBUG
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_is_finite
 #endif
@@ -18,13 +19,13 @@ module precision_utilities_mod
     private
 
     ! -- Integer Kinds --
-    integer, parameter, public :: ik = c_int        !! Default integer kind, uses C's int
-    integer, parameter, public :: ikl = c_int64_t   !! 64-bit integers, uses C's int64_t for long integers, use only when needed
+    integer, parameter, public :: ik = int32    !! Default integer kind (32-bit)
+    integer, parameter, public :: ikl = int64   !! 64-bit integers, use only when needed
 
     ! -- Real Kind --
-    integer, parameter, public :: rk_single = c_float       !! Single precision real kind, uses C's float for single precision, use only when needed
-    integer, parameter, public :: rk = c_double             !! Default real kind, uses C's double
-    integer, parameter, public :: rk_high = c_long_double   !! High precision real kind, uses C's long double for high precision, use only when needed
+    integer, parameter, public :: rk_single = real32    !! Single precision real kind (32-bit), use only when needed
+    integer, parameter, public :: rk = real64           !! Default real kind (64-bit double precision)
+    integer, parameter, public :: rk_high = real128     !! High precision real kind (128-bit), use only when needed
 
     ! -- Tolerance Constants and Helper Functions for Reals --
     real(kind = rk), parameter, public :: REAL_TOL = sqrt(epsilon(1.0_rk))  !! Tolerance for comparing two reals, can be adjusted if needed
