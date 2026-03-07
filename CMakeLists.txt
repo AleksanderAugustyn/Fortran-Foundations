@@ -12,7 +12,7 @@ project(FortranFoundations
 FetchContent_Declare(
         GCC-Compiler-Options
         GIT_REPOSITORY https://github.com/AleksanderAugustyn/GCC-Compiler-Options.git
-        GIT_TAG 1.0.0
+        GIT_TAG 1.3.0
 )
 FetchContent_MakeAvailable(GCC-Compiler-Options)
 
