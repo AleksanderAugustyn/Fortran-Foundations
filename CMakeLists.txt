@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 include(FetchContent)
 
 project(FortranFoundations
-        VERSION 2.0.0
+        VERSION 2.2.0
         LANGUAGES Fortran
         DESCRIPTION "Foundational Fortran modules: precision, constants, math utilities"
 )
@@ -12,7 +12,7 @@ project(FortranFoundations
 FetchContent_Declare(
         GCC-Compiler-Options
         GIT_REPOSITORY https://github.com/AleksanderAugustyn/GCC-Compiler-Options.git
-        GIT_TAG 1.3.0
+        GIT_TAG 1.4.0
 )
 FetchContent_MakeAvailable(GCC-Compiler-Options)
 
