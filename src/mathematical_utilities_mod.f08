@@ -11,6 +11,7 @@ module mathematical_utilities_mod
 
     ! Public subroutines
     public :: complete_elliptic_integral_generalized_s
+    public :: complete_elliptic_integral_complementary_s
     public :: compute_gauss_legendre_quadrature_s
     public :: compute_spherical_harmonics_normalization_constants_s
     public :: compute_strutinsky_curvature_coefficients_s
@@ -71,27 +72,25 @@ contains
     !! \[ \int_0^{\pi/2} \frac{a_0 \cos^2\phi + b_0 \sin^2\phi}
     !!    {\sqrt{\cos^2\phi + (1-k^2)\sin^2\phi}} d\phi \]
     !!
-    !! using the arithmetic-geometric mean iteration which converges quadratically.
+    !! Thin wrapper around complete_elliptic_integral_complementary_s: computes
+    !! 1 - k² from the modulus and forwards.
+    !!
+    !! @warning
+    !! For k ≈ 1 the subtraction 1 - k² loses precision to cancellation. Callers
+    !! that can form 1 - k² directly without cancellation (e.g. as a ratio of
+    !! geometric quantities) should call complete_elliptic_integral_complementary_s
+    !! instead.
+    !! @endwarning
     !!
     !! ## Special Cases
     !!
     !! - For \( a_0 = b_0 = 1 \): Returns \( K(k) \), the complete elliptic integral of the first kind
     !! - For \( a_0 = 1, b_0 = 1 - k^2 \): Returns \( E(k) \), the complete elliptic integral of the second kind
     !!
-    !! ## Algorithm
-    !!
-    !! Uses the AGM (Arithmetic-Geometric Mean) iteration:
-    !! 1. Initialize: \( a_0 = 1 \), \( g_0 = \sqrt{1-k^2} \)
-    !! 2. Iterate: \( a_{n+1} = (a_n + g_n)/2 \), \( g_{n+1} = \sqrt{a_n g_n} \)
-    !! 3. Converges when \( |a_n - g_n| < \epsilon \)
-    !!
     !! @note
     !! Original name: cel2
     !! @endnote
-    pure subroutine complete_elliptic_integral_generalized_s(result_integral, elliptic_modulus, coeff_a0, coeff_b0)
-
-        use mathematical_and_physical_constants_mod, only: PI_OVER_FOUR_C
-        use precision_utilities_mod, only: is_zero_f
+    pure subroutine complete_elliptic_integral_generalized_s(result_integral, elliptic_modulus, coeff_a0, coeff_b0, status)
 
         implicit none
 
@@ -100,33 +99,79 @@ contains
         real(kind = rk), intent(in), value :: elliptic_modulus !! The elliptic modulus k (must satisfy 0 ≤ k² ≤ 1)
         real(kind = rk), intent(in), value :: coeff_a0         !! First coefficient in the integral combination
         real(kind = rk), intent(in), value :: coeff_b0         !! Second coefficient in the integral combination
+        integer(kind = ik), intent(out), optional :: status    !! 0 = success, 1 = divergent K-type integral at k² = 1, 2 = AGM did not converge
+
+        call complete_elliptic_integral_complementary_s(result_integral, &
+                1.0_rk - elliptic_modulus * elliptic_modulus, coeff_a0, coeff_b0, status)
+
+    end subroutine complete_elliptic_integral_generalized_s
+
+    !> Computes a generalized complete elliptic integral from the complementary modulus squared.
+    !!
+    !! Same integral as complete_elliptic_integral_generalized_s, but takes
+    !! 1 - k² directly instead of k. This is the preferred entry point for
+    !! k ≈ 1: the AGM is well conditioned for any positive complementary
+    !! modulus down to tiny(), so a caller that can compute 1 - k² without
+    !! cancellation retains full accuracy where the modulus form has none.
+    !!
+    !! ## Degenerate case (complementary_modulus_sq = 0, detected exactly)
+    !!
+    !! - \( b_0 \approx 0 \) (E-type integral): returns coeff_a0 with status = 0,
+    !!   since the integral stays finite (E(1) = 1).
+    !! - Otherwise (K-type integral): the integral diverges logarithmically.
+    !!   Returns sign(huge(1.0_rk), coeff_b0) and sets status = 1. There is no
+    !!   NaN/Inf sentinel — callers must check status.
+    !!
+    !! ## Algorithm
+    !!
+    !! Uses the AGM (Arithmetic-Geometric Mean) iteration:
+    !! 1. Initialize: \( a_0 = 1 \), \( g_0 = \sqrt{1-k^2} \)
+    !! 2. Iterate: \( a_{n+1} = (a_n + g_n)/2 \), \( g_{n+1} = \sqrt{a_n g_n} \)
+    !! 3. Converges when \( |a_n - g_n| < \epsilon \)
+    pure subroutine complete_elliptic_integral_complementary_s(result_integral, complementary_modulus_sq, coeff_a0, coeff_b0, status)
+
+        use mathematical_and_physical_constants_mod, only: PI_OVER_FOUR_C
+        use precision_utilities_mod, only: is_zero_f
+
+        implicit none
+
+        ! Arguments
+        real(kind = rk), intent(out) :: result_integral !! The computed elliptic integral value
+        real(kind = rk), intent(in), value :: complementary_modulus_sq !! 1 - k², supplied directly (cancellation-free for k ≈ 1)
+        real(kind = rk), intent(in), value :: coeff_a0 !! First coefficient in the integral combination
+        real(kind = rk), intent(in), value :: coeff_b0 !! Second coefficient in the integral combination
+        integer(kind = ik), intent(out), optional :: status !! 0 = success, 1 = divergent K-type integral at k² = 1, 2 = AGM did not converge
 
         ! Named constants
-        real(kind = rk), parameter :: CONVERGENCE_TOLERANCE = 1.0e-8_rk !! Relative tolerance for AGM convergence
-        real(kind = rk), parameter :: LARGE_VALUE = 1.0e75_rk           !! Representation of effectively infinite result
+        ! Quadratic convergence makes a near-epsilon tolerance cost only ~1 extra iteration
+        real(kind = rk), parameter :: CONVERGENCE_TOLERANCE = 1.0e-14_rk !! Relative tolerance for AGM convergence
+        integer(kind = ik), parameter :: MAX_AGM_ITERATIONS = 40_ik !! Stall guard; even 1 - k² = tiny() needs only ~10 iterations
 
         ! Local variables for AGM iteration
-        real(kind = rk) :: complementary_modulus_sq !! 1 - k², the complementary modulus squared (geo in original)
         real(kind = rk) :: agm_geometric            !! Geometric mean sequence value
         real(kind = rk) :: agm_arithmetic           !! Arithmetic mean sequence value (ari in original)
         real(kind = rk) :: agm_arithmetic_prev      !! Previous arithmetic mean (aari in original)
         real(kind = rk) :: coeff_current            !! Current a-coefficient in iteration (aao in original)
         real(kind = rk) :: coeff_combined           !! Combined coefficient (ano in original)
         real(kind = rk) :: weight_accumulator       !! Weighted sum accumulator (w in original)
+        integer(kind = ik) :: iteration             !! AGM iteration counter
 
-        complementary_modulus_sq = 1.0_rk - elliptic_modulus * elliptic_modulus
+        if (present(status)) status = 0_ik
 
         ! Validate: complementary modulus squared must be non-negative (i.e., |k| ≤ 1)
         if (complementary_modulus_sq < 0.0_rk) then
-            error stop "complete_elliptic_integral_generalized_s: invalid elliptic modulus (|k| > 1)"
-        else if (is_zero_f(complementary_modulus_sq)) then
-            ! Degenerate case: k² = 1, integral has singularity
-            if (coeff_b0 < 0.0_rk) then
-                result_integral = -LARGE_VALUE
-            else if (is_zero_f(coeff_b0)) then
+            error stop "complete_elliptic_integral_complementary_s: invalid modulus (1 - k**2 < 0)"
+        else if (complementary_modulus_sq <= 0.0_rk) then
+            ! Exact degeneracy only (k² = 1): any positive 1 - k² is within the AGM's
+            ! domain — a tolerance window here once swallowed 8 decades of valid input
+            if (is_zero_f(coeff_b0)) then
+                ! E-type integral stays finite at k = 1
                 result_integral = coeff_a0
             else
-                result_integral = LARGE_VALUE
+                ! K-type integral diverges; finite signed sentinel instead of Inf
+                ! (release builds assume no Inf/NaN), status is the real signal
+                result_integral = sign(huge(1.0_rk), coeff_b0)
+                if (present(status)) status = 1_ik
             end if
             return
         end if
@@ -139,7 +184,7 @@ contains
         weight_accumulator = coeff_b0
 
         ! AGM iteration loop - converges quadratically
-        do
+        do iteration = 1_ik, MAX_AGM_ITERATIONS
             weight_accumulator = weight_accumulator + coeff_current * agm_geometric
             weight_accumulator = weight_accumulator + weight_accumulator  ! Double the accumulator
             coeff_current = coeff_combined
@@ -155,11 +200,17 @@ contains
             agm_geometric = agm_geometric + agm_geometric  ! Double for the AGM step
         end do
 
+        ! Loop exhaustion means rounding noise kept the convergence test from
+        ! passing; the best available estimate is still returned
+        if (iteration > MAX_AGM_ITERATIONS) then
+            if (present(status)) status = 2_ik
+        end if
+
         ! Final result: π/4 * (combined coefficient) / (arithmetic mean)
         ! Note: The original uses π/4 directly, giving the specific integral normalization
         result_integral = PI_OVER_FOUR_C * coeff_combined / agm_arithmetic
 
-    end subroutine complete_elliptic_integral_generalized_s
+    end subroutine complete_elliptic_integral_complementary_s
 
     !> Computes normalization constants for axially-symmetric spherical harmonics
     !!
