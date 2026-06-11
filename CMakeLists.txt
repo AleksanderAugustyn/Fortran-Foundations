@@ -58,3 +58,16 @@ target_include_directories(fortran_foundations
 )
 
 add_library(FortranFoundations::fortran_foundations ALIAS fortran_foundations)
+
+# --- Tests (only when built standalone, never for FetchContent consumers) ---
+if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(FORTRAN_FOUNDATIONS_TESTS_DEFAULT ON)
+else ()
+    set(FORTRAN_FOUNDATIONS_TESTS_DEFAULT OFF)
+endif ()
+option(FORTRAN_FOUNDATIONS_BUILD_TESTS "Build Fortran-Foundations tests" ${FORTRAN_FOUNDATIONS_TESTS_DEFAULT})
+
+if (FORTRAN_FOUNDATIONS_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif ()
