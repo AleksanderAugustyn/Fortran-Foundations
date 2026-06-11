@@ -83,10 +83,23 @@ contains
 
     !> A helper function for checking "close to zero"
     !!
-    !! Checks if the absolute value of a real number is less than a predefined tolerance. Is used to avoid direct equality comparisons between floating point numbers and zero.
-    pure logical function is_zero_f(val)
-        real(kind = rk), intent(in) :: val  !! Input real number to check
-        is_zero_f = (abs(val) < REAL_TOL)
+    !! Checks if the absolute value of a real number is less than a tolerance. Is used to avoid direct equality comparisons between floating point numbers and zero.
+    !!
+    !! @warning
+    !! The default REAL_TOL = sqrt(epsilon) suits O(1) quantities only. For values that
+    !! legitimately span many decades (moduli, residuals, densities), pass an explicit
+    !! scale-appropriate tolerance instead.
+    !! @endwarning
+    pure logical function is_zero_f(val, tolerance)
+        real(kind = rk), intent(in) :: val                  !! Input real number to check
+        real(kind = rk), intent(in), optional :: tolerance  !! Comparison tolerance (default: REAL_TOL)
+
+        real(kind = rk) :: tolerance_local
+
+        tolerance_local = REAL_TOL
+        if (present(tolerance)) tolerance_local = tolerance
+
+        is_zero_f = (abs(val) < tolerance_local)
 
         return
     end function is_zero_f
