@@ -235,6 +235,10 @@ contains
     !! @note
     !! Array index k corresponds to multipolarity λ = k
     !! @endnote
+    !!
+    !! @note
+    !! Original name: CONST or HCONST
+    !! @endnote
     pure subroutine compute_spherical_harmonics_normalization_constants_s(&
             spherical_harmonics_normalization_constants, &
             max_multipole_order)
@@ -282,6 +286,10 @@ contains
     !!
     !! @note
     !! Convergence tolerance is 3×10⁻¹⁴, suitable for double precision.
+    !! @endnote
+    !!
+    !! @note
+    !! Original name: HQGAUS
     !! @endnote
     pure subroutine compute_gauss_legendre_quadrature_s(n, nodes, weights)
 
@@ -517,7 +525,7 @@ contains
     !! Memory: O(n²) for eigenvector storage during computation
     !!
     !! @note
-    !! Replaces the original hermit/hroot/hrecur implementation.
+    !! Original name: hermit/hroot/hrecur
     !! @endnote
     pure subroutine compute_gauss_hermite_quadrature_s(n_points, nodes, weights, info)
 
@@ -715,13 +723,16 @@ contains
     !! Memory: O(n²) for eigenvector storage during computation
     !!
     !! @note
-    !! Replaces the original laguer/lgroot/lgrecr implementation.
     !! This approach eliminates the empirically-tuned "magic constants" required
     !! by Newton-Raphson based methods for initial root guesses.
     !! @endnote
     !!
     !! @note
     !! For very large n (> 1000), consider asymptotic methods for better performance.
+    !! @endnote
+    !!
+    !! @note
+    !! Original name: laguer/lgroot/lgrecr
     !! @endnote
     pure subroutine compute_gauss_laguerre_quadrature_s(n_points, alpha_param, nodes, weights, info)
 
@@ -918,6 +929,10 @@ contains
     !!
     !! @note
     !! This routine does not normalize the polynomials
+    !! @endnote
+    !!
+    !! @note
+    !! Original name: HLEGND
     !! @endnote
     pure subroutine compute_legendre_polynomials_s(n, x, p, dp)
 
