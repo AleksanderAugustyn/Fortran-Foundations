@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 include(FetchContent)
 
 project(FortranFoundations
-        VERSION 2.3.1
+        VERSION 2.3.2
         LANGUAGES Fortran
         DESCRIPTION "Foundational Fortran modules: precision, constants, math utilities"
 )
