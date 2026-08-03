@@ -51,6 +51,16 @@ Array sorting algorithms.
 - `sort_array_ascending_s` — in-place heap sort (O(n log n))
 - `sort_ascending_with_indices_s` — selection sort preserving two associated index arrays (for eigenvalue/quantum-number correspondence)
 
+### `shape_core_mod`
+
+Shared invalidation engine and status codes for shape parameterization libraries (the `shape_core` deliverable of the shape parameterization contract). The engine is bookkeeping-only: a library embeds one `shape_engine_t` per thread in its cache, reports parameter vectors and completed recomputes, and queries which cached intermediates are stale.
+
+- **Engine type:** `shape_engine_t` — fixed-size, no allocatables, thread-confined
+- **Procedures:** `shape_engine_init_s`, `shape_engine_begin_s`, `shape_engine_needs_f`, `shape_engine_note_computed_s`, `shape_engine_invalidate_all_s`, `shape_engine_recompute_count_f` — all pure
+- **Diffing:** parameters compared as `ikl` bit patterns via `transfer` (fast-math safe; `-0.0` ≠ `+0.0`, identical NaN bits equal); a compile-time assert rejects any `rk`/`ikl` width mismatch
+- **Constants:** `SHAPE_CACHE_MAX_PARAMS` (8), `SHAPE_STANDALONE_MAX_PARAMS` (64), `SHAPE_MAX_INTERMEDIATES` (16)
+- **Status codes:** `SHAPE_VALID` (0) and `SHAPE_ERROR_*` 1–6 — the contract's shared range (0–99, append-only)
+
 ## Building
 
 **Requirements:** CMake 3.20+, a Fortran compiler (gfortran recommended)

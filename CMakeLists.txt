@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 include(FetchContent)
 
 project(FortranFoundations
-        VERSION 2.3.2
+        VERSION 2.4.0
         LANGUAGES Fortran
         DESCRIPTION "Foundational Fortran modules: precision, constants, math utilities"
 )
@@ -39,6 +39,7 @@ add_library(fortran_foundations STATIC
         src/mathematical_and_physical_constants_mod.f08
         src/mathematical_utilities_mod.f08
         src/utility_procedures_mod.f08
+        src/shape_core_mod.f08
 )
 
 target_link_libraries(fortran_foundations PRIVATE fortran_foundations_flags)
